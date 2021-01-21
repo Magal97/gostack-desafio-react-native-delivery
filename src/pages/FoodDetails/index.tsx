@@ -73,38 +73,116 @@ const FoodDetails: React.FC = () => {
 
   useEffect(() => {
     async function loadFood(): Promise<void> {
-      // Load a specific food with extras based on routeParams id
+      const response = await api.get('/foods', {
+        params: {
+          id_like: routeParams.id,
+        },
+      });
+
+      const formatedFood = response.data.map((mapedFood: Food) => ({
+        ...mapedFood,
+        formattedPrice: formatValue(mapedFood.price),
+      }));
+
+      const checkExtras = formatedFood[0].extras;
+
+      if (checkExtras) {
+        const formatedExtras = checkExtras.map((extra: Extra) => ({
+          ...extra,
+          quantity: 0,
+        }));
+        setExtras(formatedExtras);
+      }
+
+      setFood(formatedFood[0]);
     }
 
     loadFood();
   }, [routeParams]);
 
+  useEffect(() => {
+    async function checkIsFavorite(): Promise<void> {
+      const favorites = await api.get('/favorites');
+      const checkFavorite = favorites.data.find(
+        (favorite: Food) => favorite.id === food.id,
+      );
+
+      if (checkFavorite) {
+        setIsFavorite(true);
+      }
+    }
+
+    checkIsFavorite();
+  }, [food.id]);
+
   function handleIncrementExtra(id: number): void {
-    // Increment extra quantity
+    setExtras(
+      extras.map(mapedExtra =>
+        mapedExtra.id === id
+          ? { ...mapedExtra, quantity: mapedExtra.quantity + 1 }
+          : mapedExtra,
+      ),
+    );
   }
 
   function handleDecrementExtra(id: number): void {
-    // Decrement extra quantity
+    const findExtra = extras.find(extra => extra.id === id);
+
+    if (!findExtra) return;
+    if (findExtra.quantity === 0) return;
+
+    setExtras(
+      extras.map(mapedExtra =>
+        mapedExtra.id === id
+          ? { ...mapedExtra, quantity: mapedExtra.quantity - 1 }
+          : mapedExtra,
+      ),
+    );
   }
 
   function handleIncrementFood(): void {
-    // Increment food quantity
+    setFoodQuantity(foodQuantity + 1);
   }
 
   function handleDecrementFood(): void {
-    // Decrement food quantity
+    if (foodQuantity === 1) return;
+    setFoodQuantity(foodQuantity - 1);
   }
 
   const toggleFavorite = useCallback(() => {
-    // Toggle if food is favorite or not
+    if (isFavorite) {
+      api.delete(`/favorites/${food.id}`);
+    } else {
+      api.post('/favorites', food);
+    }
+
+    setIsFavorite(!isFavorite);
   }, [isFavorite, food]);
 
   const cartTotal = useMemo(() => {
-    // Calculate cartTotal
+    const extraTotal = extras.reduce((acummulator, extra) => {
+      return acummulator + extra.quantity * extra.value;
+    }, 0);
+
+    const foodPrice = food.price;
+
+    return formatValue((extraTotal + foodPrice) * foodQuantity);
   }, [extras, food, foodQuantity]);
 
   async function handleFinishOrder(): Promise<void> {
-    // Finish the order and save on the API
+    /* const selectedExtras = extras.filter(extra => extra.quantity > 0);
+
+    const checkExtras = food.extras;
+
+    if (extras) {
+      const formatedExtras = food.extras.map((extra: Extra) => ({
+        ...extra,
+        quantity: extras.map(extraMaped =>
+          extra.id === extraMaped.id ? extraMaped.quantity : 0,
+        ),
+      }));
+      console.log(formatedExtras);
+    } */
   }
 
   // Calculate the correct icon name
