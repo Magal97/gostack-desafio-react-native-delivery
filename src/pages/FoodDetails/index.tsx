@@ -54,6 +54,8 @@ interface Food {
   id: number;
   name: string;
   description: string;
+  category: number;
+  thumbnail_url: string;
   price: number;
   image_url: string;
   formattedPrice: string;
@@ -170,19 +172,45 @@ const FoodDetails: React.FC = () => {
   }, [extras, food, foodQuantity]);
 
   async function handleFinishOrder(): Promise<void> {
-    /* const selectedExtras = extras.filter(extra => extra.quantity > 0);
+    const selectedExtras = extras.filter(extra => extra.quantity > 0);
+    const { id, name, description, price, thumbnail_url, category } = food;
 
-    const checkExtras = food.extras;
+    if (selectedExtras.length > 0) {
+      const extrasItens = food.extras
+        .map(extra => {
+          const selected = selectedExtras.filter(
+            filteredItem => filteredItem.id === extra.id,
+          )[0];
 
-    if (extras) {
-      const formatedExtras = food.extras.map((extra: Extra) => ({
-        ...extra,
-        quantity: extras.map(extraMaped =>
-          extra.id === extraMaped.id ? extraMaped.quantity : 0,
-        ),
-      }));
-      console.log(formatedExtras);
-    } */
+          return {
+            ...extra,
+            quantity: selected?.quantity === undefined ? 0 : selected?.quantity,
+          };
+        })
+        .filter(filtered => filtered.quantity !== 0);
+
+      api.post('/orders', {
+        id: Math.floor(Math.random() * (1000 - 1)) + 1,
+        product_id: id,
+        name,
+        description,
+        price,
+        category,
+        thumbnail_url,
+        extras: extrasItens,
+      });
+    } else {
+      api.post('/orders', {
+        id: Math.floor(Math.random() * (1000 - 1)) + 1,
+        product_id: id,
+        name,
+        description,
+        price,
+        category,
+        thumbnail_url,
+        extras: [],
+      });
+    }
   }
 
   // Calculate the correct icon name
